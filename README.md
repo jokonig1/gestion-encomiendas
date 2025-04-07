@@ -13,12 +13,12 @@ Sistema web para la gestión de encomiendas en edificios residenciales.
 
 ### Backend
 
-cd backend
-npm install
-npm run dev
+- cd backend
+- npm install
+- npm run dev
 
 ### Frontend
 
-cd frontend
-npm install
-npm start
+- cd frontend
+- npm install
+- npm start

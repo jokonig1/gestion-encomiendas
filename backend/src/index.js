@@ -15,8 +15,8 @@ app.use(express.json());
 
 // Conectar a MongoDB
 console.log('Intentando conectar a MongoDB...');
-console.log('URI de MongoDB:', process.env.MONGODB_URI);
-mongoose.connect(process.env.MONGODB_URI, {
+console.log('URI de MongoDB:', process.env.MONGO_URI);
+mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })

@@ -12,6 +12,11 @@ const generateToken = (userId) => {
 // Login
 exports.login = async (req, res) => {
     try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { email, password } = req.body;
 
         // Validar que el usuario existe
@@ -39,8 +44,11 @@ exports.login = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error en el servidor' });
+        console.error('Error en login:', error);
+        res.status(500).json({ 
+            message: 'Error en el servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 

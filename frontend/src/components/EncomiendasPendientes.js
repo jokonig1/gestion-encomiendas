@@ -57,8 +57,17 @@ const EncomiendasPendientes = () => {
     }
   };
 
-  const formatDate = (date) => {
-    return format(new Date(date), 'dd/MM/yyyy HH:mm');
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Fecha no disponible';
+      }
+      return format(date, 'dd/MM/yyyy HH:mm');
+    } catch (error) {
+      console.error('Error al formatear la fecha:', error);
+      return 'Fecha no disponible';
+    }
   };
 
   if (loading) {

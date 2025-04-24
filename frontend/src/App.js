@@ -9,6 +9,10 @@ import DashboardHome from './components/DashboardHome';
 import NuevaEncomienda from './components/NuevaEncomienda';
 import EncomiendasPendientes from './components/EncomiendasPendientes';
 import HistorialEncomiendas from './components/HistorialEncomiendas';
+import ClientDashboard from './components/dashboard/ClientDashboard';
+import ActivePackages from './components/dashboard/ActivePackages';
+import PackageHistory from './components/dashboard/PackageHistory';
+import Profile from './components/dashboard/Profile';
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children }) => {
@@ -31,6 +35,8 @@ function App() {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                
+                {/* Rutas del Conserje */}
                 <Route
                     path="/dashboard/conserje"
                     element={
@@ -71,14 +77,41 @@ function App() {
                         </PrivateRoute>
                     }
                 />
+
+                {/* Rutas del Cliente */}
                 <Route
-                    path="/dashboard/residente"
+                    path="/dashboard/cliente"
                     element={
                         <PrivateRoute>
-                            <ResidenteDashboard />
+                            <ClientDashboard />
                         </PrivateRoute>
                     }
                 />
+                <Route
+                    path="/dashboard/cliente/active"
+                    element={
+                        <PrivateRoute>
+                            <ClientDashboard />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/dashboard/cliente/history"
+                    element={
+                        <PrivateRoute>
+                            <ClientDashboard />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/dashboard/cliente/profile"
+                    element={
+                        <PrivateRoute>
+                            <ClientDashboard />
+                        </PrivateRoute>
+                    }
+                />
+
                 <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
         </Router>

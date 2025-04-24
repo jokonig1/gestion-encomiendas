@@ -1,4 +1,5 @@
 const Encomienda = require('../models/Encomienda');
+const User = require('../models/User');
 
 // Registrar nueva encomienda
 exports.registrarEncomienda = async (req, res) => {
@@ -56,37 +57,94 @@ exports.registrarEncomienda = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Encomienda registrada exitosamente',
       data: encomiendaGuardada
     });
   } catch (error) {
-    console.error('=== Error al registrar encomienda ===');
-    console.error('Tipo de error:', error.name);
-    console.error('Mensaje de error:', error.message);
-    console.error('Stack trace:', error.stack);
-    
-    // Manejar errores específicos de MongoDB
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Error de validación',
-        error: error.message
-      });
-    }
-
-    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-      return res.status(500).json({
-        success: false,
-        message: 'Error de base de datos',
-        error: error.message
-      });
-    }
-
+    console.error('Error al registrar encomienda:', error);
     res.status(500).json({
       success: false,
       message: 'Error al registrar la encomienda',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+// Obtener todas las encomiendas
+exports.obtenerEncomiendas = async (req, res) => {
+  try {
+    const encomiendas = await Encomienda.find().sort({ fechaRegistro: -1 });
+    res.json(encomiendas);
+  } catch (error) {
+    console.error('Error al obtener encomiendas:', error);
+    res.status(500).json({ message: 'Error al obtener las encomiendas' });
+  }
+};
+
+// Obtener encomiendas por usuario
+exports.obtenerEncomiendasPorUsuario = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { estado } = req.query;
+
+    console.log('=== Inicio obtenerEncomiendasPorUsuario ===');
+    console.log('userId:', userId);
+    console.log('estado:', estado);
+
+    // Obtener el usuario para conseguir su departamento
+    const usuario = await User.findById(userId);
+    if (!usuario) {
+      console.log('Usuario no encontrado con ID:', userId);
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    console.log('Usuario encontrado:', {
+      id: usuario._id,
+      departamento: usuario.departamento,
+      role: usuario.role
+    });
+
+    // Construir el query
+    const query = { 
+      departamento: usuario.departamento,
+      estado: estado || 'pendiente'  // Si no se especifica estado, buscar pendientes
+    };
+
+    console.log('Query a ejecutar:', query);
+
+    // Primero verificar todas las encomiendas sin filtro
+    const todasLasEncomiendas = await Encomienda.find();
+    console.log('Total de encomiendas en la base de datos:', todasLasEncomiendas.length);
+    console.log('Muestra de encomiendas:', todasLasEncomiendas.slice(0, 2));
+
+    const encomiendas = await Encomienda.find(query).sort({ fechaRegistro: -1 });
+    console.log('Encomiendas encontradas para el query:', encomiendas.length);
+    console.log('Detalle de encomiendas encontradas:', encomiendas);
+    
+    res.json(encomiendas);
+  } catch (error) {
+    console.error('Error al obtener encomiendas por usuario:', error);
+    res.status(500).json({ message: 'Error al obtener las encomiendas del usuario' });
+  }
+};
+
+// Marcar encomienda como retirada
+exports.marcarComoRetirada = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const encomienda = await Encomienda.findById(id);
+
+    if (!encomienda) {
+      return res.status(404).json({ message: 'Encomienda no encontrada' });
+    }
+
+    encomienda.estado = 'entregado';
+    encomienda.fechaEntrega = new Date();
+    await encomienda.save();
+
+    res.json(encomienda);
+  } catch (error) {
+    console.error('Error al marcar encomienda como retirada:', error);
+    res.status(500).json({ message: 'Error al actualizar la encomienda' });
   }
 };
 

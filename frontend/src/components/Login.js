@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL, ROLES } from '../config';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -23,22 +24,52 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', formData);
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            localStorage.setItem('userId', response.data.user.id);
+            console.log('Intentando login en:', `${API_URL}/api/auth/login`);
+            const response = await axios.post(`${API_URL}/api/auth/login`, formData);
+            console.log('Respuesta del servidor:', response.data);
             
-            toast.success('¡Bienvenido!');
-            
+            const { token, user } = response.data;
+
+            if (!token || !user) {
+                throw new Error('Respuesta del servidor inválida');
+            }
+
+            // Guardar datos en localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('userId', user.id);
+
+            // Mostrar mensaje de éxito
+            toast.success('¡Inicio de sesión exitoso!');
+
             // Redirigir según el rol del usuario
-            if (response.data.user.role === 'conserje') {
+            if (user.role === ROLES.CONSERJE) {
                 navigate('/dashboard/conserje');
+            } else if (user.role === ROLES.RESIDENTE) {
+                navigate('/dashboard/residente');
             } else {
-                navigate('/dashboard/cliente');
+                toast.error('Rol de usuario no válido');
+                localStorage.clear();
+                navigate('/login');
             }
         } catch (error) {
-            console.error('Error de login:', error);
-            toast.error('Error al iniciar sesión. Verifique sus credenciales.');
+            console.error('Error completo:', error);
+            
+            if (error.response) {
+                // El servidor respondió con un código de error
+                console.error('Datos de error:', error.response.data);
+                console.error('Estado de error:', error.response.status);
+                toast.error(error.response.data.message || 'Error en el servidor');
+            } else if (error.request) {
+                // La petición fue hecha pero no se recibió respuesta
+                console.error('No se recibió respuesta del servidor');
+                toast.error('No se pudo conectar con el servidor. Verifique su conexión.');
+            } else {
+                // Error en la configuración de la petición
+                console.error('Error de configuración:', error.message);
+                toast.error('Error al procesar la solicitud');
+            }
+        } finally {
             setLoading(false);
         }
     };

@@ -45,6 +45,12 @@ const Dashboard = ({ children }) => {
           >
             Historial de Encomiendas
           </Link>
+          <Link
+            to="/dashboard/conserje/reclamos"
+            className="block px-4 py-2 text-gray-600 hover:bg-gray-100"
+          >
+            Reclamos
+          </Link>
         </nav>
       </div>
 

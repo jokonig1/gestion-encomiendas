@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const authController = require('../controllers/authController');
+const { proteger, autorizar } = require('../middleware/auth');
 
 // Validaciones
 const loginValidation = [
@@ -19,5 +20,8 @@ const registerValidation = [
 // Rutas
 router.post('/login', loginValidation, authController.login);
 router.post('/register', registerValidation, authController.register);
+
+// Ruta para obtener información de un usuario por ID (requiere autenticación)
+router.get('/usuarios/:id', proteger, authController.getUserById);
 
 module.exports = router; 

@@ -14,8 +14,10 @@ app.use(cors());
 app.use(express.json());
 
 // Conectar a MongoDB
-console.log('Intentando conectar a MongoDB...');
+console.log('=== Configuración de MongoDB ===');
 console.log('URI de MongoDB:', process.env.MONGO_URI);
+console.log('Intentando conectar a MongoDB...');
+
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -23,6 +25,8 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => {
     console.log('MongoDB conectado exitosamente');
     console.log('Base de datos:', mongoose.connection.db.databaseName);
+    console.log('Host:', mongoose.connection.host);
+    console.log('Puerto:', mongoose.connection.port);
 })
 .catch(err => {
     console.error('Error detallado al conectar a MongoDB:');
@@ -33,10 +37,12 @@ mongoose.connect(process.env.MONGO_URI, {
 // Rutas
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/encomiendas', require('./routes/encomiendaRoutes'));
+app.use('/api/reclamos', require('./routes/reclamoRoutes'));
 
 // Manejo de errores
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error en la aplicación:', err);
+    console.error('Stack trace:', err.stack);
     res.status(500).json({ message: 'Error interno del servidor' });
 });
 

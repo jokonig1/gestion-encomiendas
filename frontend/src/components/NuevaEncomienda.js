@@ -9,7 +9,8 @@ const NuevaEncomienda = () => {
   const [formData, setFormData] = useState({
     departamento: '',
     tipo: '',
-    comentarios: ''
+    comentarios: '',
+    isUrgente: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -47,6 +48,14 @@ const NuevaEncomienda = () => {
     }
   };
 
+  // Manejar cambio en el checkbox de urgente
+  const handleUrgenteChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      isUrgente: e.target.checked
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -76,7 +85,8 @@ const NuevaEncomienda = () => {
         setFormData({
           departamento: '',
           tipo: '',
-          comentarios: ''
+          comentarios: '',
+          isUrgente: false,
         });
         // Limpiar errores
         setErrors({});
@@ -156,6 +166,21 @@ const NuevaEncomienda = () => {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             rows="3"
           />
+        </div>
+
+        {/* Checkbox para marcar como urgente */}
+        <div className="flex items-center">
+          <input
+            id="isUrgente"
+            name="isUrgente"
+            type="checkbox"
+            checked={formData.isUrgente}
+            onChange={handleUrgenteChange}
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="isUrgente" className="ml-2 block text-sm text-gray-900">
+            Marcar como urgente
+          </label>
         </div>
 
         <div className="flex items-center justify-end">

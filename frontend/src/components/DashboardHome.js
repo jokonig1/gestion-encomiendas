@@ -11,7 +11,8 @@ const DashboardHome = () => {
   const [formData, setFormData] = useState({
     departamento: '',
     tipo: '',
-    comentarios: ''
+    comentarios: '',
+    isUrgente: false,
   });
 
   // Función para cargar encomiendas pendientes
@@ -68,6 +69,14 @@ const DashboardHome = () => {
     }));
   };
 
+  // Manejar cambio en el checkbox de urgente
+  const handleUrgenteChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      isUrgente: e.target.checked
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -89,7 +98,8 @@ const DashboardHome = () => {
         setFormData({
           departamento: '',
           tipo: '',
-          comentarios: ''
+          comentarios: '',
+          isUrgente: false,
         });
         fetchEncomiendas();
       }
@@ -226,6 +236,21 @@ const DashboardHome = () => {
               rows="2"
               placeholder="Información adicional"
             />
+          </div>
+
+          {/* Checkbox para marcar como urgente */}
+          <div className="flex items-center">
+            <input
+              id="isUrgenteQuick"
+              name="isUrgente"
+              type="checkbox"
+              checked={formData.isUrgente}
+              onChange={handleUrgenteChange}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="isUrgenteQuick" className="ml-2 block text-sm text-gray-900">
+              Marcar como urgente
+            </label>
           </div>
 
           <div className="flex justify-end">

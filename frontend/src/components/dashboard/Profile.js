@@ -12,8 +12,7 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
-    telefono: '',
-    direccion: ''
+    departamento: ''
   });
 
   useEffect(() => {
@@ -35,15 +34,14 @@ const Profile = () => {
         };
         
         // Asegurarse de que la URL sea correcta
-        const response = await axios.get(`${API_URL}/api/usuarios/${userId}`, config);
+        const response = await axios.get(`${API_URL}/api/auth/usuarios/${userId}`, config);
         
         if (response.data) {
           setUserData(response.data);
           setFormData({
             nombre: response.data.nombre || '',
             email: response.data.email || '',
-            telefono: response.data.telefono || '',
-            direccion: response.data.direccion || ''
+            departamento: response.data.departamento || ''
           });
         } else {
           setError('No se pudo cargar la información del usuario');
@@ -77,8 +75,7 @@ const Profile = () => {
     setFormData({
       nombre: userData.nombre || '',
       email: userData.email || '',
-      telefono: userData.telefono || '',
-      direccion: userData.direccion || ''
+      departamento: userData.departamento || ''
     });
   };
 
@@ -92,11 +89,16 @@ const Profile = () => {
         }
       };
       
-      await axios.put(`${API_URL}/api/usuarios/${userId}`, formData, config);
+      const dataToSave = { nombre: formData.nombre, email: formData.email };
+      if (userData?.role === 'residente') {
+        dataToSave.departamento = formData.departamento;
+      }
+
+      await axios.put(`${API_URL}/api/auth/usuarios/${userId}`, dataToSave, config);
       
       setUserData({
         ...userData,
-        ...formData
+        ...dataToSave
       });
       
       setIsEditing(false);
@@ -162,34 +164,22 @@ const Profile = () => {
               <p className="mt-1 text-lg text-gray-900">{userData?.email}</p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            ) : (
-              <p className="mt-1 text-lg text-gray-900">{userData?.telefono}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Dirección</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            ) : (
-              <p className="mt-1 text-lg text-gray-900">{userData?.direccion}</p>
-            )}
-          </div>
+          {userData?.role === 'residente' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Departamento</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="departamento"
+                  value={formData.departamento}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              ) : (
+                <p className="mt-1 text-lg text-gray-900">{userData?.departamento}</p>
+              )}
+            </div>
+          )}
         </div>
         <div className="mt-6 flex space-x-4">
           {isEditing ? (

@@ -7,7 +7,7 @@ exports.registrarEncomienda = async (req, res) => {
     console.log('=== Inicio de registro de encomienda ===');
     console.log('Headers:', req.headers);
     console.log('Body completo:', req.body);
-    const { departamento, tipo, comentarios } = req.body;
+    const { departamento, tipo, comentarios, isUrgente, codigo } = req.body;
 
     // Validar datos requeridos
     if (!departamento || !tipo) {
@@ -37,18 +37,50 @@ exports.registrarEncomienda = async (req, res) => {
       });
     }
 
-    console.log('Datos validados correctamente, creando encomienda...');
+    console.log('Datos validados correctamente.');
 
-    // Crear nueva encomienda
+    // Generar código único si no se proporciona o está vacío
+    let finalCodigo = codigo;
+    if (!finalCodigo || typeof finalCodigo !== 'string' || finalCodigo.trim() === '') {
+        console.log('Codigo no proporcionado o vacío, generando uno único...');
+        let unique = false;
+        let attempts = 0;
+        while (!unique && attempts < 10) {
+            const randomString = Math.random().toString(36).substring(2, 10).toUpperCase();
+            const newCodigo = `ENC-${randomString}`; // Prefijo y cadena aleatoria
+
+            // Verificar si ya existe una encomienda con este código
+            const existing = await Encomienda.findOne({ codigo: newCodigo });
+            if (!existing) {
+                finalCodigo = newCodigo;
+                unique = true;
+            }
+            attempts++;
+        }
+        if (!unique) {
+            console.error('Failed to generate unique codigo after multiple attempts in controller.');
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudo generar un código de encomienda único.'
+            });
+        }
+        console.log('Codigo único generado:', finalCodigo);
+    } else {
+        console.log('Usando codigo proporcionado:', finalCodigo);
+    }
+
+    // Crear nueva encomienda con el código final
     const encomienda = new Encomienda({
       departamento,
       tipo,
       comentarios: comentarios || '',
       estado: 'pendiente',
-      fechaRegistro: new Date()
+      fechaRegistro: new Date(),
+      isUrgente: isUrgente || false,
+      codigo: finalCodigo, // Asignar el código generado/proporcionado
     });
 
-    console.log('Encomienda creada:', encomienda);
+    console.log('Encomienda creada (con codigo):', encomienda);
     console.log('Intentando guardar en la base de datos...');
 
     // Guardar en la base de datos
@@ -60,7 +92,8 @@ exports.registrarEncomienda = async (req, res) => {
       data: encomiendaGuardada
     });
   } catch (error) {
-    console.error('Error al registrar encomienda:', error);
+    console.error('Error detallado al registrar encomienda:', error);
+    console.error('Stack trace del error:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Error al registrar la encomienda',
@@ -124,6 +157,101 @@ exports.obtenerEncomiendasPorUsuario = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener encomiendas por usuario:', error);
     res.status(500).json({ message: 'Error al obtener las encomiendas del usuario' });
+  }
+};
+
+// Obtener encomiendas no notificadas para un usuario
+exports.getUnnotifiedPackages = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const usuario = await User.findById(userId);
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const encomiendas = await Encomienda.find({
+      departamento: usuario.departamento,
+      estado: 'pendiente',
+      notificado: false,
+    }).select('_id'); // Solo necesitamos los IDs
+
+    res.status(200).json({
+      success: true,
+      data: encomiendas,
+    });
+  } catch (error) {
+    console.error('Error al obtener encomiendas no notificadas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener encomiendas no notificadas',
+      error: error.message,
+    });
+  }
+};
+
+// Marcar encomiendas como notificadas
+exports.markPackagesAsNotified = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere un array de IDs de encomiendas.',
+      });
+    }
+
+    const result = await Encomienda.updateMany(
+      { _id: { $in: ids } },
+      { $set: { notificado: true } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `${result.nModified} encomiendas marcadas como notificadas.`, // nModified es para versiones antiguas de Mongoose, considerar updatedCount
+      updatedCount: result.modifiedCount, // Campo más reciente en Mongoose
+    });
+  } catch (error) {
+    console.error('Error al marcar encomiendas como notificadas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al marcar encomiendas como notificadas',
+      error: error.message,
+    });
+  }
+};
+
+// Obtener encomiendas urgentes pendientes con más de 12 horas
+exports.getUrgentPendingPackages = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const usuario = await User.findById(userId);
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000); // 12 horas en milisegundos
+
+    const encomiendas = await Encomienda.find({
+      departamento: usuario.departamento,
+      estado: 'pendiente',
+      isUrgente: true,
+      fechaIngreso: { $lte: twelveHoursAgo }, // Fecha de ingreso hace más de 12 horas
+    }).select('codigo tipo fechaIngreso'); // Seleccionar campos relevantes para la notificación
+
+    res.status(200).json({
+      success: true,
+      data: encomiendas,
+    });
+  } catch (error) {
+    console.error('Error al obtener encomiendas urgentes pendientes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener encomiendas urgentes pendientes',
+      error: error.message,
+    });
   }
 };
 

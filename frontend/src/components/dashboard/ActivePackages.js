@@ -10,6 +10,8 @@ const ActivePackages = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [reclamoData, setReclamoData] = useState({});
+  const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -72,26 +74,51 @@ const ActivePackages = () => {
 
   const handleCloseModal = () => {
     setSelectedPackage(null);
+    setReclamoData({});
+  };
+
+  const handleReclamoChange = (e, packageId) => {
+    setReclamoData(prev => ({
+      ...prev,
+      [packageId]: e.target.value
+    }));
   };
 
   const handleMarkAsPickedUp = async (pkgId) => {
     try {
+      setProcessingId(pkgId);
       const token = localStorage.getItem('token');
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       };
-      
+
+      const descripcionReclamo = reclamoData[pkgId];
+      if (descripcionReclamo) {
+        console.log('Registrando reclamo para paquete:', pkgId);
+        await axios.post(`${API_URL}/api/reclamos`, { encomiendaId: pkgId, descripcion: descripcionReclamo }, config);
+        toast.success('Reclamo registrado exitosamente');
+      }
+
+      console.log('Marcando paquete como retirado:', pkgId);
       await axios.put(`${API_URL}/api/encomiendas/${pkgId}/retirar`, {}, config);
       toast.success('Paquete marcado como retirado correctamente');
-      
-      // Actualizar la lista de paquetes
+
       setPackages(packages.filter(pkg => pkg._id !== pkgId));
       setSelectedPackage(null);
+      setReclamoData(prev => {
+        const newState = { ...prev };
+        delete newState[pkgId];
+        return newState;
+      });
+
     } catch (err) {
-      console.error('Error al marcar el paquete como retirado:', err);
-      toast.error('Error al marcar el paquete como retirado');
+      console.error('Error al marcar el paquete como retirado o registrar reclamo:', err);
+      const errorMessage = err.response?.data?.message || 'Error al procesar la solicitud';
+      toast.error(errorMessage);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -147,39 +174,17 @@ const ActivePackages = () => {
   }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Paquetes Activos</h2>
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Paquetes Activos</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {packages.map((pkg) => (
-          <div
-            key={pkg._id}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-            onClick={() => handlePackageClick(pkg)}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{pkg.tipo}</h3>
-              <span className={`px-3 py-1 rounded-full text-sm ${
-                pkg.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-              }`}>
-                {pkg.estado === 'pendiente' ? 'Pendiente' : 'Entregado'}
-              </span>
-            </div>
-            <div className="space-y-2">
-              <p className="text-gray-600">
-                <span className="font-medium">Fecha de registro:</span>{' '}
-                {formatDate(pkg.fechaRegistro)}
-              </p>
-              <p className="text-gray-600">
-                <span className="font-medium">Departamento:</span> {pkg.departamento}
-              </p>
-              {pkg.comentarios && (
-                <p className="text-gray-600">
-                  <span className="font-medium">Comentarios:</span> {pkg.comentarios}
-                </p>
-              )}
-            </div>
+        {packages.map(pkg => (
+          <div key={pkg._id} className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Encomienda: {pkg.tipo}</h3>
+            <p className="text-gray-700 mb-1">Departamento: {pkg.departamento}</p>
+            <p className="text-gray-700 text-sm">Llegada: {formatDate(pkg.fechaRegistro)}</p>
             <button
               className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
+              onClick={() => handlePackageClick(pkg)}
             >
               Ver detalles
             </button>
@@ -188,11 +193,53 @@ const ActivePackages = () => {
       </div>
 
       {selectedPackage && (
-        <PackageDetails 
-          package={selectedPackage} 
-          onClose={handleCloseModal}
-          onMarkAsPickedUp={handleMarkAsPickedUp}
-        />
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" onClick={handleCloseModal}>
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" onClick={e => e.stopPropagation()}>
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Detalles de Encomienda</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">Código: {selectedPackage.codigo || selectedPackage._id}</p>
+                <p className="text-sm text-gray-500">Departamento: {selectedPackage.departamento}</p>
+                <p className="text-sm text-gray-500">Tipo: {selectedPackage.tipo}</p>
+                <p className="text-sm text-gray-500">Llegada: {formatDate(selectedPackage.fechaRegistro)}</p>
+                {selectedPackage.comentarios && (
+                  <p className="text-sm text-gray-500">Comentarios: {selectedPackage.comentarios}</p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="reclamo" className="block text-sm font-medium text-gray-700 text-left">¿Tiene algún reclamo?</label>
+                <textarea
+                  id="reclamo"
+                  name="reclamo"
+                  rows="3"
+                  className="shadow-sm focus:ring-blue-500 focus:border-blue-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                  value={reclamoData[selectedPackage._id] || ''}
+                  onChange={(e) => handleReclamoChange(e, selectedPackage._id)}
+                  placeholder="Escriba su reclamo aquí (opcional)"
+                ></textarea>
+              </div>
+
+              <div className="items-center px-4 py-3">
+                <button
+                  id="ok-btn"
+                  className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={() => handleMarkAsPickedUp(selectedPackage._id)}
+                  disabled={processingId === selectedPackage._id}
+                >
+                  {processingId === selectedPackage._id ? 'Procesando...' : 'Marcar como Retirado'}
+                </button>
+                <button
+                  id="cancel-btn"
+                  className="mt-3 px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  onClick={handleCloseModal}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

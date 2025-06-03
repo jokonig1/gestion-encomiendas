@@ -18,8 +18,26 @@ const encomiendaSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['pendiente', 'entregado'],
+    enum: ['pendiente', 'retirado', 'extraviado'],
     default: 'pendiente'
+  },
+  notificado: {
+    type: Boolean,
+    default: false
+  },
+  isUrgente: {
+    type: Boolean,
+    default: false
+  },
+  fechaIngreso: {
+    type: Date,
+    default: Date.now
+  },
+  fechaRetiro: {
+    type: Date,
+  },
+  observaciones: {
+    type: String,
   },
   fechaRegistro: {
     type: Date,
@@ -27,7 +45,15 @@ const encomiendaSchema = new mongoose.Schema({
   },
   fechaEntrega: {
     type: Date
+  },
+  codigo: {
+    type: String,
+    required: true,
+    unique: true,
+    sparse: true
   }
+}, {
+  timestamps: true,
 });
 
 module.exports = mongoose.model('Encomienda', encomiendaSchema); 

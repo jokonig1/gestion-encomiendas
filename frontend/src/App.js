@@ -13,6 +13,7 @@ import ClientDashboard from './components/dashboard/ClientDashboard';
 import ActivePackages from './components/dashboard/ActivePackages';
 import PackageHistory from './components/dashboard/PackageHistory';
 import Profile from './components/dashboard/Profile';
+import ClaimsListConserje from './components/dashboard/ClaimsListConserje';
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children }) => {
@@ -77,6 +78,16 @@ function App() {
                         </PrivateRoute>
                     }
                 />
+                <Route
+                    path="/dashboard/conserje/reclamos"
+                    element={
+                        <PrivateRoute>
+                            <Dashboard>
+                                <ClaimsListConserje />
+                            </Dashboard>
+                        </PrivateRoute>
+                    }
+                />
 
                 {/* Rutas del Cliente */}
                 <Route
@@ -105,6 +116,14 @@ function App() {
                 />
                 <Route
                     path="/dashboard/cliente/profile"
+                    element={
+                        <PrivateRoute>
+                            <ClientDashboard />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/dashboard/cliente/claims"
                     element={
                         <PrivateRoute>
                             <ClientDashboard />

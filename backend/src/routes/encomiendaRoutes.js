@@ -19,9 +19,13 @@ router.patch('/:id', proteger, autorizar(['conserje']), encomiendaController.act
 // Ruta para marcar encomienda como retirada
 router.put('/:id/retirar', proteger, autorizar(['conserje']), encomiendaController.marcarComoRetirada);
 
+// Ruta para buscar encomienda por codigoRetiro
+router.get('/buscar-retiro/:codigoRetiro', proteger, autorizar(['conserje']), encomiendaController.buscarPorCodigoRetiro);
+
 // Nuevas rutas para notificaciones
 router.get('/usuario/:userId/notificaciones/nuevas', proteger, autorizar(['residente']), encomiendaController.getUnnotifiedPackages); // Obtener paquetes no notificados
 router.patch('/notificaciones/marcar-leido', proteger, autorizar(['residente']), encomiendaController.markPackagesAsNotified); // Marcar paquetes como notificados
 router.get('/usuario/:userId/notificaciones/urgentes', proteger, autorizar(['residente']), encomiendaController.getUrgentPendingPackages); // Obtener paquetes urgentes pendientes
+router.patch('/encomiendas/:id/ultima-notificacion', proteger, autorizar(['residente']), encomiendaController.updateLastNotification); // Actualizar ultimaNotificacion
 
 module.exports = router; 

@@ -26,6 +26,9 @@ const reclamoSchema = new mongoose.Schema({
   },
   fechaResolucion: {
     type: Date
+  },
+  resolucion: {
+    type: String
   }
 }, {
   timestamps: true // Añade createdAt y updatedAt automáticamente

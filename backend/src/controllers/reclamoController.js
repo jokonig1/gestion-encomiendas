@@ -44,7 +44,7 @@ exports.obtenerReclamosPorUsuario = async (req, res) => {
     }
 
     const reclamos = await Reclamo.find({ usuario: userId })
-      .populate('encomienda', 'departamento tipo fechaRegistro') // Opcional: poblar datos de la encomienda
+      .populate('encomienda', 'departamento tipo fechaRegistro codigo')
       .sort({ fechaCreacion: -1 });
 
     res.json(reclamos);
@@ -85,6 +85,7 @@ exports.obtenerTodosLosReclamos = async (req, res) => {
 exports.marcarReclamoResuelto = async (req, res) => {
   try {
     const { id } = req.params;
+    const { resolucion } = req.body; // Obtener el mensaje de resolución del body
 
     // Opcional: Verificar si el usuario autenticado tiene rol de conserje
     if (req.user.role !== 'conserje') {
@@ -93,7 +94,7 @@ exports.marcarReclamoResuelto = async (req, res) => {
 
     const reclamo = await Reclamo.findByIdAndUpdate(
       id,
-      { estado: 'resuelto', fechaResolucion: new Date() },
+      { estado: 'resuelto', fechaResolucion: new Date(), resolucion: resolucion },
       { new: true }
     ).populate('usuario', 'nombre email'); // Opcional: poblar datos del usuario resuelto
 

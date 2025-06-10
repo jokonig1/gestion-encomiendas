@@ -36,6 +36,9 @@ const encomiendaSchema = new mongoose.Schema({
   fechaRetiro: {
     type: Date,
   },
+  ultimaNotificacion: {
+    type: Date
+  },
   observaciones: {
     type: String,
   },
@@ -51,6 +54,13 @@ const encomiendaSchema = new mongoose.Schema({
     required: true,
     unique: true,
     sparse: true
+  },
+  codigoRetiro: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    uppercase: true,
   }
 }, {
   timestamps: true,

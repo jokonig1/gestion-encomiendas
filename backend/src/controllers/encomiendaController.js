@@ -69,6 +69,30 @@ exports.registrarEncomienda = async (req, res) => {
         console.log('Usando codigo proporcionado:', finalCodigo);
     }
 
+    // Generar codigoRetiro único
+    let finalCodigoRetiro;
+    let uniqueCodigoRetiro = false;
+    let retries = 0;
+    while (!uniqueCodigoRetiro && retries < 10) {
+        const randomRetiroString = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const newCodigoRetiro = `RET-${randomRetiroString}`;
+
+        const existingRetiro = await Encomienda.findOne({ codigoRetiro: newCodigoRetiro });
+        if (!existingRetiro) {
+            finalCodigoRetiro = newCodigoRetiro;
+            uniqueCodigoRetiro = true;
+        }
+        retries++;
+    }
+    if (!uniqueCodigoRetiro) {
+        console.error('Failed to generate unique codigoRetiro after multiple attempts.');
+        return res.status(500).json({
+            success: false,
+            message: 'No se pudo generar un código de retiro único.'
+        });
+    }
+    console.log('Codigo de retiro único generado:', finalCodigoRetiro);
+
     // Crear nueva encomienda con el código final
     const encomienda = new Encomienda({
       departamento,
@@ -78,6 +102,7 @@ exports.registrarEncomienda = async (req, res) => {
       fechaRegistro: new Date(),
       isUrgente: isUrgente || false,
       codigo: finalCodigo, // Asignar el código generado/proporcionado
+      codigoRetiro: finalCodigoRetiro, // Asignar el código de retiro generado
     });
 
     console.log('Encomienda creada (con codigo):', encomienda);
@@ -117,11 +142,14 @@ exports.obtenerEncomiendas = async (req, res) => {
 exports.obtenerEncomiendasPorUsuario = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { estado } = req.query;
+    const { estado, tipo, fechaInicio, fechaFin } = req.query; // Obtener también tipo, fechaInicio, fechaFin
 
     console.log('=== Inicio obtenerEncomiendasPorUsuario ===');
     console.log('userId:', userId);
     console.log('estado:', estado);
+    console.log('tipo:', tipo);
+    console.log('fechaInicio:', fechaInicio);
+    console.log('fechaFin:', fechaFin);
 
     // Obtener el usuario para conseguir su departamento
     const usuario = await User.findById(userId);
@@ -137,17 +165,34 @@ exports.obtenerEncomiendasPorUsuario = async (req, res) => {
     });
 
     // Construir el query
-    const query = { 
+    const query = {
       departamento: usuario.departamento,
-      estado: estado || 'pendiente'  // Si no se especifica estado, buscar pendientes
     };
 
-    console.log('Query a ejecutar:', query);
+    // Filtrar por estado si se proporciona y no está vacío
+    if (estado && estado !== '') {
+      query.estado = estado;
+    }
 
-    // Primero verificar todas las encomiendas sin filtro
-    const todasLasEncomiendas = await Encomienda.find();
-    console.log('Total de encomiendas en la base de datos:', todasLasEncomiendas.length);
-    console.log('Muestra de encomiendas:', todasLasEncomiendas.slice(0, 2));
+    // Filtrar por tipo si se proporciona y no está vacío
+    if (tipo && tipo !== '') {
+        query.tipo = tipo;
+    }
+
+    // Filtrar por rango de fechas de ingreso si se proporcionan
+    if (fechaInicio || fechaFin) {
+        query.fechaIngreso = {};
+        if (fechaInicio) {
+            query.fechaIngreso.$gte = new Date(fechaInicio);
+        }
+        if (fechaFin) {
+            const endOfDay = new Date(fechaFin);
+            endOfDay.setHours(23, 59, 59, 999);
+            query.fechaIngreso.$lte = endOfDay;
+        }
+    }
+
+    console.log('Query a ejecutar:', query);
 
     const encomiendas = await Encomienda.find(query).sort({ fechaRegistro: -1 });
     console.log('Encomiendas encontradas para el query:', encomiendas.length);
@@ -164,9 +209,11 @@ exports.obtenerEncomiendasPorUsuario = async (req, res) => {
 exports.getUnnotifiedPackages = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log(`[Backend] Solicitud para obtener paquetes no notificados para userId: ${userId}`);
     const usuario = await User.findById(userId);
 
     if (!usuario) {
+      console.log(`[Backend] Usuario no encontrado con ID: ${userId}`);
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
@@ -176,53 +223,42 @@ exports.getUnnotifiedPackages = async (req, res) => {
       notificado: false,
     }).select('_id'); // Solo necesitamos los IDs
 
+    console.log(`[Backend] Paquetes no notificados encontrados para ${usuario.departamento}: ${encomiendas.length} - IDs: ${encomiendas.map(p => p._id).join(', ')}`);
     res.status(200).json({
       success: true,
-      data: encomiendas,
+      data: encomiendas
     });
   } catch (error) {
-    console.error('Error al obtener encomiendas no notificadas:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener encomiendas no notificadas',
-      error: error.message,
-    });
+    console.error('Error al obtener paquetes no notificados:', error);
+    res.status(500).json({ message: 'Error al obtener paquetes no notificadas' });
   }
 };
 
-// Marcar encomiendas como notificadas
+// Marcar paquetes como notificados
 exports.markPackagesAsNotified = async (req, res) => {
   try {
-    const { ids } = req.body;
+    const { encomiendaIds } = req.body;
+    console.log(`[Backend] Solicitud para marcar como notificados los IDs: ${encomiendaIds.join(', ')}`);
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requiere un array de IDs de encomiendas.',
-      });
+    if (!encomiendaIds || !Array.isArray(encomiendaIds) || encomiendaIds.length === 0) {
+      console.log('[Backend] IDs de encomiendas son requeridos para marcar como notificados');
+      return res.status(400).json({ message: 'IDs de encomiendas son requeridos' });
     }
 
-    const result = await Encomienda.updateMany(
-      { _id: { $in: ids } },
+    const updateResult = await Encomienda.updateMany(
+      { _id: { $in: encomiendaIds } },
       { $set: { notificado: true } }
     );
 
-    res.status(200).json({
-      success: true,
-      message: `${result.nModified} encomiendas marcadas como notificadas.`, // nModified es para versiones antiguas de Mongoose, considerar updatedCount
-      updatedCount: result.modifiedCount, // Campo más reciente en Mongoose
-    });
+    console.log(`[Backend] Resultado de marcar como notificados: ${updateResult.modifiedCount} modificados, ${updateResult.matchedCount} encontrados.`);
+    res.status(200).json({ success: true, message: 'Encomiendas marcadas como notificadas' });
   } catch (error) {
-    console.error('Error al marcar encomiendas como notificadas:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al marcar encomiendas como notificadas',
-      error: error.message,
-    });
+    console.error('Error al marcar paquetes como notificados:', error);
+    res.status(500).json({ message: 'Error al marcar paquetes como notificados' });
   }
 };
 
-// Obtener encomiendas urgentes pendientes con más de 12 horas
+// Obtener paquetes urgentes pendientes
 exports.getUrgentPendingPackages = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -232,26 +268,44 @@ exports.getUrgentPendingPackages = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000); // 12 horas en milisegundos
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
 
     const encomiendas = await Encomienda.find({
       departamento: usuario.departamento,
       estado: 'pendiente',
       isUrgente: true,
-      fechaIngreso: { $lte: twelveHoursAgo }, // Fecha de ingreso hace más de 12 horas
-    }).select('codigo tipo fechaIngreso'); // Seleccionar campos relevantes para la notificación
+      fechaIngreso: { $lte: twoMinutesAgo }, // Paquetes registrados hace más de 2 minutos
+      $or: [
+        { ultimaNotificacion: { $exists: false } }, // No ha sido notificado nunca
+        { ultimaNotificacion: { $lte: twoMinutesAgo } }  // Última notificación fue hace más de 2 minutos
+      ]
+    }).select('_id'); // Solo necesitamos los IDs
 
     res.status(200).json({
       success: true,
-      data: encomiendas,
+      data: encomiendas
     });
   } catch (error) {
-    console.error('Error al obtener encomiendas urgentes pendientes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener encomiendas urgentes pendientes',
-      error: error.message,
-    });
+    console.error('Error al obtener paquetes urgentes pendientes:', error);
+    res.status(500).json({ message: 'Error al obtener paquetes urgentes pendientes' });
+  }
+};
+
+// Actualizar ultimaNotificacion de una encomienda
+exports.updateLastNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await Encomienda.findByIdAndUpdate(
+      id,
+      { ultimaNotificacion: new Date() },
+      { new: true }
+    );
+
+    res.status(200).json({ success: true, message: 'ultimaNotificacion actualizada' });
+  } catch (error) {
+    console.error('Error al actualizar ultimaNotificacion:', error);
+    res.status(500).json({ message: 'Error al actualizar ultimaNotificacion' });
   }
 };
 
@@ -265,8 +319,8 @@ exports.marcarComoRetirada = async (req, res) => {
       return res.status(404).json({ message: 'Encomienda no encontrada' });
     }
 
-    encomienda.estado = 'entregado';
-    encomienda.fechaEntrega = new Date();
+    encomienda.estado = 'retirado';
+    encomienda.fechaRetiro = new Date();
     await encomienda.save();
 
     res.json(encomienda);
@@ -368,5 +422,22 @@ exports.actualizarEncomienda = async (req, res) => {
       message: 'Error al actualizar la encomienda',
       error: error.message
     });
+  }
+};
+
+// Buscar encomienda por codigoRetiro
+exports.buscarPorCodigoRetiro = async (req, res) => {
+  try {
+    const { codigoRetiro } = req.params;
+    const encomienda = await Encomienda.findOne({ codigoRetiro: codigoRetiro.toUpperCase() });
+
+    if (!encomienda) {
+      return res.status(404).json({ message: 'Encomienda no encontrada con ese código de retiro.' });
+    }
+
+    res.status(200).json(encomienda);
+  } catch (error) {
+    console.error('Error al buscar encomienda por código de retiro:', error);
+    res.status(500).json({ message: 'Error al buscar la encomienda.' });
   }
 }; 

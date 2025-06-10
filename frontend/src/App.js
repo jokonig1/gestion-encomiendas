@@ -2,31 +2,46 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Login from './components/Login';
-import Register from './components/Register';
-import Dashboard from './components/Dashboard';
-import DashboardHome from './components/DashboardHome';
-import NuevaEncomienda from './components/NuevaEncomienda';
-import EncomiendasPendientes from './components/EncomiendasPendientes';
-import HistorialEncomiendas from './components/HistorialEncomiendas';
-import ClientDashboard from './components/dashboard/ClientDashboard';
-import ActivePackages from './components/dashboard/ActivePackages';
-import PackageHistory from './components/dashboard/PackageHistory';
-import Profile from './components/dashboard/Profile';
-import ClaimsListConserje from './components/dashboard/ClaimsListConserje';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import DashboardLayout from './components/layout/DashboardLayout';
 
-// Componente para proteger rutas
-const PrivateRoute = ({ children }) => {
+// Importar vistas del conserje
+import InicioConserje from './views/dashboardConserje/Inicio';
+import PaquetesPendientes from './views/dashboardConserje/PaquetesPendientes';
+import RegistrarPaquete from './views/dashboardConserje/RegistrarPaquete';
+import HistorialEncomiendas from './views/dashboardConserje/HistorialEncomiendas';
+import ReclamosConserje from './views/dashboardConserje/Reclamos';
+// import VerificarRetiro from './views/dashboardConserje/VerificarRetiro'; // Eliminar o comentar la importación
+
+// Importar vistas del residente
+import InicioResidente from './views/dashboardResidente/Inicio';
+import PaquetesActivos from './views/dashboardResidente/PaquetesActivos';
+import HistorialResidente from './views/dashboardResidente/Historial';
+import PerfilResidente from './views/dashboardResidente/Perfil';
+import ReclamosResidente from './views/dashboardResidente/Reclamos';
+
+const PrivateRoute = ({ children, userRole }) => {
     const token = localStorage.getItem('token');
-    return token ? children : <Navigate to="/login" />;
-};
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
 
-// Componente placeholder para el dashboard de residente
-const ResidenteDashboard = () => (
-    <div className="p-4">
-        <h1 className="text-2xl font-bold">Dashboard Residente</h1>
-    </div>
-);
+    console.log('PrivateRoute - Token:', token);
+    console.log('PrivateRoute - User:', user);
+    console.log('PrivateRoute - Expected Role:', userRole);
+
+    if (!token || !user) {
+        console.log('No token or user found, redirecting to login');
+        return <Navigate to="/login" />;
+    }
+
+    if (userRole && user.role !== userRole) {
+        console.log('Invalid role, redirecting to appropriate dashboard');
+        return <Navigate to={`/dashboard/${user.role}`} />;
+    }
+
+    return children;
+};
 
 function App() {
     return (
@@ -34,104 +49,116 @@ function App() {
             <ToastContainer />
             
             <Routes>
+                {/* Rutas públicas */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                
-                {/* Rutas del Conserje */}
+
+                {/* Rutas del conserje */}
                 <Route
                     path="/dashboard/conserje"
                     element={
-                        <PrivateRoute>
-                            <Dashboard>
-                                <DashboardHome />
-                            </Dashboard>
+                        <PrivateRoute userRole="conserje">
+                            <DashboardLayout userRole="conserje" userName="Conserje">
+                                <InicioConserje />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/conserje/nueva-encomienda"
+                    path="/dashboard/conserje/pendientes"
                     element={
-                        <PrivateRoute>
-                            <Dashboard>
-                                <NuevaEncomienda />
-                            </Dashboard>
+                        <PrivateRoute userRole="conserje">
+                            <DashboardLayout userRole="conserje" userName="Conserje">
+                                <PaquetesPendientes />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/conserje/encomiendas-pendientes"
+                    path="/dashboard/conserje/registrar"
                     element={
-                        <PrivateRoute>
-                            <Dashboard>
-                                <EncomiendasPendientes />
-                            </Dashboard>
+                        <PrivateRoute userRole="conserje">
+                            <DashboardLayout userRole="conserje" userName="Conserje">
+                                <RegistrarPaquete />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
                     path="/dashboard/conserje/historial"
                     element={
-                        <PrivateRoute>
-                            <Dashboard>
+                        <PrivateRoute userRole="conserje">
+                            <DashboardLayout userRole="conserje" userName="Conserje">
                                 <HistorialEncomiendas />
-                            </Dashboard>
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
                     path="/dashboard/conserje/reclamos"
                     element={
-                        <PrivateRoute>
-                            <Dashboard>
-                                <ClaimsListConserje />
-                            </Dashboard>
+                        <PrivateRoute userRole="conserje">
+                            <DashboardLayout userRole="conserje" userName="Conserje">
+                                <ReclamosConserje />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
 
-                {/* Rutas del Cliente */}
+                {/* Rutas del residente */}
                 <Route
-                    path="/dashboard/cliente"
+                    path="/dashboard/residente"
                     element={
-                        <PrivateRoute>
-                            <ClientDashboard />
+                        <PrivateRoute userRole="residente">
+                            <DashboardLayout userRole="residente" userName="Residente">
+                                <InicioResidente />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/cliente/active"
+                    path="/dashboard/residente/activos"
                     element={
-                        <PrivateRoute>
-                            <ClientDashboard />
+                        <PrivateRoute userRole="residente">
+                            <DashboardLayout userRole="residente" userName="Residente">
+                                <PaquetesActivos />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/cliente/history"
+                    path="/dashboard/residente/historial"
                     element={
-                        <PrivateRoute>
-                            <ClientDashboard />
+                        <PrivateRoute userRole="residente">
+                            <DashboardLayout userRole="residente" userName="Residente">
+                                <HistorialResidente />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/cliente/profile"
+                    path="/dashboard/residente/perfil"
                     element={
-                        <PrivateRoute>
-                            <ClientDashboard />
+                        <PrivateRoute userRole="residente">
+                            <DashboardLayout userRole="residente" userName="Residente">
+                                <PerfilResidente />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
                 <Route
-                    path="/dashboard/cliente/claims"
+                    path="/dashboard/residente/reclamos"
                     element={
-                        <PrivateRoute>
-                            <ClientDashboard />
+                        <PrivateRoute userRole="residente">
+                            <DashboardLayout userRole="residente" userName="Residente">
+                                <ReclamosResidente />
+                            </DashboardLayout>
                         </PrivateRoute>
                     }
                 />
 
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                {/* Redirección por defecto */}
+                <Route path="/" element={<Navigate to="/login" />} />
             </Routes>
         </Router>
     );

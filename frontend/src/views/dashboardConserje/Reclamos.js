@@ -92,69 +92,141 @@ const ReclamosConserje = () => {
         </div>
         <div className="p-6">
           {reclamosPendientes.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encomienda</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolución</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reclamosPendientes.map((reclamo) => (
-                    <tr key={reclamo._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reclamo.encomienda ? `Depto: ${reclamo.encomienda.departamento}` : 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {truncateDescription(reclamo.descripcion, 50)}
-                        {reclamo.descripcion.length > 50 && (
-                          <button 
-                            className="text-blue-600 hover:text-blue-900 ml-2"
-                            onClick={() => handleViewMoreDescription(reclamo.descripcion)}
-                          >
-                            Ver más
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800`}>
+            <>
+              {/* Tabla para pantallas grandes (md y superiores) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Encomienda</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolución</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reclamosPendientes.map((reclamo) => (
+                      <tr key={reclamo._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{reclamo.encomienda ? reclamo.encomienda._id : '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reclamo.encomienda ? reclamo.encomienda.departamento : 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {truncateDescription(reclamo.descripcion, 50)}
+                          {reclamo.descripcion.length > 50 && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 ml-2"
+                              onClick={() => handleViewMoreDescription(reclamo.descripcion)}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800`}>
+                            {reclamo.estado}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {reclamo.resolucion ? (
+                            <>
+                              {truncateDescription(reclamo.resolucion, 50)}
+                              {reclamo.resolucion.length > 50 && (
+                                <button 
+                                  className="text-blue-600 hover:text-blue-900 ml-2"
+                                  onClick={() => handleViewMoreResolution(reclamo.resolucion)}
+                                >
+                                  Ver más
+                                </button>
+                              )}
+                            </>
+                          ) : 'Pendiente de respuesta'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {reclamo.estado === 'pendiente' && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900"
+                              onClick={() => setSelectedClaim(reclamo)}
+                            >
+                              Resolver
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tarjetas para pantallas pequeñas (menores a md) */}
+              <div className="block md:hidden space-y-2">
+                {reclamosPendientes.map((reclamo) => (
+                  <div key={reclamo._id} className="bg-white rounded p-4 shadow mb-2">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900">ID Encomienda</p>
+                          <p className="text-xs text-gray-700 break-all">{reclamo.encomienda ? reclamo.encomienda._id : '-'}</p>
+                          <p className="text-sm font-semibold text-gray-900 mt-2">Departamento</p>
+                          <p className="text-sm text-gray-700">{reclamo.encomienda ? reclamo.encomienda.departamento : 'N/A'}</p>
+                        </div>
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                           {reclamo.estado}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {reclamo.resolucion ? (
-                          <>
-                            {truncateDescription(reclamo.resolucion, 50)}
-                            {reclamo.resolucion.length > 50 && (
-                              <button 
-                                className="text-blue-600 hover:text-blue-900 ml-2"
-                                onClick={() => handleViewMoreResolution(reclamo.resolucion)}
-                              >
-                                Ver más
-                              </button>
-                            )}
-                          </>
-                        ) : 'Pendiente de respuesta'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {reclamo.estado === 'pendiente' && (
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Descripción</p>
+                        <p className="text-sm text-gray-700">
+                          {truncateDescription(reclamo.descripcion, 50)}
+                          {reclamo.descripcion.length > 50 && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 ml-2"
+                              onClick={() => handleViewMoreDescription(reclamo.descripcion)}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Fecha Creación</p>
+                        <p className="text-sm text-gray-700">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Resolución</p>
+                        <p className="text-sm text-gray-700">
+                          {reclamo.resolucion ? (
+                            <>
+                              {truncateDescription(reclamo.resolucion, 50)}
+                              {reclamo.resolucion.length > 50 && (
+                                <button 
+                                  className="text-blue-600 hover:text-blue-900 ml-2"
+                                  onClick={() => handleViewMoreResolution(reclamo.resolucion)}
+                                >
+                                  Ver más
+                                </button>
+                              )}
+                            </>
+                          ) : 'Pendiente de respuesta'}
+                        </p>
+                      </div>
+                      {reclamo.estado === 'pendiente' && (
+                        <div className="pt-2">
                           <button 
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                             onClick={() => setSelectedClaim(reclamo)}
                           >
                             Resolver
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <p className="text-gray-500 text-center py-4">No hay reclamos pendientes.</p>
           )}
@@ -168,58 +240,120 @@ const ReclamosConserje = () => {
         </div>
         <div className="p-6">
           {reclamosResueltos.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encomienda</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolución</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reclamosResueltos.map((reclamo) => (
-                    <tr key={reclamo._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reclamo.encomienda ? `Depto: ${reclamo.encomienda.departamento}` : 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {truncateDescription(reclamo.descripcion, 50)}
-                        {reclamo.descripcion.length > 50 && (
-                          <button 
-                            className="text-blue-600 hover:text-blue-900 ml-2"
-                            onClick={() => handleViewMoreDescription(reclamo.descripcion)}
-                          >
-                            Ver más
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800`}>
+            <>
+              {/* Tabla para pantallas grandes (md y superiores) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Encomienda</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolución</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reclamosResueltos.map((reclamo) => (
+                      <tr key={reclamo._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">{reclamo.encomienda ? reclamo.encomienda._id : '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{reclamo.encomienda ? reclamo.encomienda.departamento : 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {truncateDescription(reclamo.descripcion, 50)}
+                          {reclamo.descripcion.length > 50 && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 ml-2"
+                              onClick={() => handleViewMoreDescription(reclamo.descripcion)}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800`}>
+                            {reclamo.estado}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {reclamo.resolucion ? (
+                            <>
+                              {truncateDescription(reclamo.resolucion, 50)}
+                              {reclamo.resolucion.length > 50 && (
+                                <button 
+                                  className="text-blue-600 hover:text-blue-900 ml-2"
+                                  onClick={() => handleViewMoreResolution(reclamo.resolucion)}
+                                >
+                                  Ver más
+                                </button>
+                              )}
+                            </>
+                          ) : 'Pendiente de respuesta'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tarjetas para pantallas pequeñas (menores a md) */}
+              <div className="block md:hidden space-y-2">
+                {reclamosResueltos.map((reclamo) => (
+                  <div key={reclamo._id} className="bg-white rounded p-4 shadow mb-2">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900">ID Encomienda</p>
+                          <p className="text-xs text-gray-700 break-all">{reclamo.encomienda ? reclamo.encomienda._id : '-'}</p>
+                          <p className="text-sm font-semibold text-gray-900 mt-2">Departamento</p>
+                          <p className="text-sm text-gray-700">{reclamo.encomienda ? reclamo.encomienda.departamento : 'N/A'}</p>
+                        </div>
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                           {reclamo.estado}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {reclamo.resolucion ? (
-                          <>
-                            {truncateDescription(reclamo.resolucion, 50)}
-                            {reclamo.resolucion.length > 50 && (
-                              <button 
-                                className="text-blue-600 hover:text-blue-900 ml-2"
-                                onClick={() => handleViewMoreResolution(reclamo.resolucion)}
-                              >
-                                Ver más
-                              </button>
-                            )}
-                          </>
-                        ) : 'Pendiente de respuesta'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Descripción</p>
+                        <p className="text-sm text-gray-700">
+                          {truncateDescription(reclamo.descripcion, 50)}
+                          {reclamo.descripcion.length > 50 && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 ml-2"
+                              onClick={() => handleViewMoreDescription(reclamo.descripcion)}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Fecha Creación</p>
+                        <p className="text-sm text-gray-700">{new Date(reclamo.fechaCreacion).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Resolución</p>
+                        <p className="text-sm text-gray-700">
+                          {reclamo.resolucion ? (
+                            <>
+                              {truncateDescription(reclamo.resolucion, 50)}
+                              {reclamo.resolucion.length > 50 && (
+                                <button 
+                                  className="text-blue-600 hover:text-blue-900 ml-2"
+                                  onClick={() => handleViewMoreResolution(reclamo.resolucion)}
+                                >
+                                  Ver más
+                                </button>
+                              )}
+                            </>
+                          ) : 'Pendiente de respuesta'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <p className="text-gray-500 text-center py-4">No hay reclamos resueltos.</p>
           )}

@@ -102,7 +102,8 @@ const HistorialEncomiendas = () => {
 
       {/* Tabla de Historial */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Tabla para pantallas grandes (md y superiores) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -139,7 +140,7 @@ const HistorialEncomiendas = () => {
                     <div className="text-sm text-gray-900">{new Date(paquete.fechaIngreso).toLocaleDateString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{paquete.fechaEntrega ? new Date(paquete.fechaEntrega).toLocaleDateString() : 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{paquete.fechaRetiro ? new Date(paquete.fechaRetiro).toLocaleDateString() : 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${paquete.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
@@ -170,6 +171,56 @@ const HistorialEncomiendas = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Tarjetas para pantallas pequeñas (menores a md) */}
+        <div className="block md:hidden p-4 space-y-2">
+          {historial.length > 0 ? (
+            historial.map((paquete) => (
+              <div key={paquete._id} className="bg-white rounded p-4 shadow mb-2">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Departamento</p>
+                      <p className="text-sm text-gray-700">{paquete.departamento}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${paquete.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                        {paquete.estado}
+                      </span>
+                      {paquete.isUrgente && (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                          Urgente
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Tipo</p>
+                    <p className="text-sm text-gray-700">{paquete.tipo}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Fecha Ingreso</p>
+                    <p className="text-sm text-gray-700">{new Date(paquete.fechaIngreso).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Fecha Entrega</p>
+                    <p className="text-sm text-gray-700">{paquete.fechaRetiro ? new Date(paquete.fechaRetiro).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div className="pt-2">
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                      onClick={() => setSelectedPackage(paquete)}
+                    >
+                      Ver Detalles
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-center py-4">No hay encomiendas históricas disponibles.</p>
+          )}
+        </div>
       </div>
 
       {/* Modal de Detalles */}
@@ -188,8 +239,36 @@ const HistorialEncomiendas = () => {
                 </svg>
               </button>
             </div>
-            <div className="space-y-6">
-              <PackageDetails paquete={selectedPackage} />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">ID del Paquete</p>
+                  <p className="text-sm text-gray-700 break-all">{selectedPackage._id}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Tipo de Paquete</p>
+                  <p className="text-sm text-gray-700 capitalize">{selectedPackage.tipo}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Fecha y Hora de Ingreso</p>
+                  <p className="text-sm text-gray-700">{selectedPackage.fechaIngreso ? new Date(selectedPackage.fechaIngreso).toLocaleString() : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Comentarios</p>
+                  <p className="text-sm text-gray-700">{selectedPackage.comentarios || 'Sin comentarios'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-sm font-semibold text-gray-900">Retiro</p>
+                  {selectedPackage.estado === 'retirado' && selectedPackage.fechaRetiro ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-700">Fecha y hora de retiro: {new Date(selectedPackage.fechaRetiro).toLocaleString()}</p>
+                      <p className="text-sm text-gray-700">Retirado por: {selectedPackage.retiradoPor || 'Desconocido'}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-yellow-700">Este paquete no ha sido retirado aún.</p>
+                  )}
+                </div>
+              </div>
               {selectedPackage.historial && selectedPackage.historial.length > 0 && (
                 <PackageHistory historial={selectedPackage.historial} />
               )}

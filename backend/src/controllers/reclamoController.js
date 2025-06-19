@@ -37,13 +37,22 @@ exports.crearReclamo = async (req, res) => {
 exports.obtenerReclamosPorUsuario = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { estado } = req.query; // Obtener el estado de los parámetros de consulta
     
     // Opcional: Verificar que el usuario que hace la petición sea el mismo que el userId en los params
     if (req.user.id !== userId) {
         return res.status(403).json({ message: 'No autorizado para ver reclamos de este usuario' });
     }
 
-    const reclamos = await Reclamo.find({ usuario: userId })
+    // Construir el filtro base
+    const filtro = { usuario: userId };
+    
+    // Agregar filtro de estado si se proporciona
+    if (estado) {
+        filtro.estado = estado;
+    }
+
+    const reclamos = await Reclamo.find(filtro)
       .populate('encomienda', 'departamento tipo fechaRegistro codigo')
       .sort({ fechaCreacion: -1 });
 

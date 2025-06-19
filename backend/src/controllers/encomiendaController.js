@@ -321,6 +321,20 @@ exports.marcarComoRetirada = async (req, res) => {
 
     encomienda.estado = 'retirado';
     encomienda.fechaRetiro = new Date();
+
+    // Buscar el usuario dueño de la encomienda
+    let usuario = null;
+    if (encomienda.usuario) {
+      usuario = await User.findById(encomienda.usuario);
+    } else {
+      usuario = await User.findOne({ departamento: encomienda.departamento });
+    }
+    if (usuario) {
+      encomienda.retiradoPor = `${usuario.nombre} (Depto. ${usuario.departamento})`;
+    } else {
+      encomienda.retiradoPor = 'Desconocido';
+    }
+
     await encomienda.save();
 
     res.json(encomienda);

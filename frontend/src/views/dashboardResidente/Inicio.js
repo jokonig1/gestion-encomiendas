@@ -44,7 +44,7 @@ const Inicio = () => {
         // Fetch estadísticas (ej: paquetes retirados este mes, reclamos activos)
         const [retiradosRes, reclamosRes] = await Promise.all([
           api.get(`/api/encomiendas/usuario/${user.id}`, { params: { estado: 'retirado', period: 'month' } }),
-          api.get(`/api/reclamos/usuario/${user.id}`, { params: { estado: 'activo' } })
+          api.get(`/api/reclamos/usuario/${user.id}`, { params: { estado: 'pendiente' } })
         ]);
         setStats(prevStats => ({
           ...prevStats,
@@ -183,25 +183,62 @@ const Inicio = () => {
         </div>
         <div className="p-6">
           {paquetesPendientes.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Ingreso</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código de Retiro</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paquetesPendientes.map((paquete) => (
-                    <tr key={paquete._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{paquete.departamento}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{paquete.tipo}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(paquete.fechaIngreso).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+            <>
+              {/* Tabla para pantallas grandes (md y superiores) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Ingreso</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código de Retiro</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paquetesPendientes.map((paquete) => (
+                      <tr key={paquete._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{paquete.departamento}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{paquete.tipo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(paquete.fechaIngreso).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            paquete.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                            paquete.estado === 'retirado' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {paquete.estado.charAt(0).toUpperCase() + paquete.estado.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="font-mono text-gray-700">{paquete.codigoRetiro}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => setSelectedPackage(paquete)}
+                            className="text-blue-600 hover:text-blue-900 mr-3"
+                          >
+                            Ver Detalles
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tarjetas para pantallas pequeñas (menores a md) */}
+              <div className="block md:hidden space-y-2">
+                {paquetesPendientes.map((paquete) => (
+                  <div key={paquete._id} className="bg-white rounded p-4 shadow mb-2">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Departamento</p>
+                          <p className="text-sm text-gray-700">{paquete.departamento}</p>
+                        </div>
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           paquete.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
                           paquete.estado === 'retirado' ? 'bg-green-100 text-green-800' :
@@ -209,23 +246,32 @@ const Inicio = () => {
                         }`}>
                           {paquete.estado.charAt(0).toUpperCase() + paquete.estado.slice(1)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="font-mono text-gray-700">{paquete.codigoRetiro}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Tipo</p>
+                        <p className="text-sm text-gray-700">{paquete.tipo}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Fecha Ingreso</p>
+                        <p className="text-sm text-gray-700">{new Date(paquete.fechaIngreso).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Código de Retiro</p>
+                        <p className="text-sm font-mono text-gray-700">{paquete.codigoRetiro}</p>
+                      </div>
+                      <div className="pt-2">
                         <button
                           onClick={() => setSelectedPackage(paquete)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                         >
                           Ver Detalles
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <p className="text-gray-500 text-center py-4">No hay paquetes pendientes para tu departamento.</p>
           )}

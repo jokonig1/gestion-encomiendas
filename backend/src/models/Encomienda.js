@@ -61,6 +61,15 @@ const encomiendaSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     uppercase: true,
+  },
+  retiradoPor: {
+    type: String,
+    trim: true,
+  },
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
   }
 }, {
   timestamps: true,

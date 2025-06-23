@@ -12,7 +12,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://TU_FRONTEND_RENDER.onrender.com' // Reemplaza con tu URL real de frontend
+  'https://gestion-encomiendas-frontend.onrender.com'
 ];
 app.use(cors({
   origin: allowedOrigins,

@@ -1,6 +1,13 @@
 const Encomienda = require('../models/Encomienda');
 const User = require('../models/User');
 
+// Mockeable: función para enviar notificación al residente
+async function sendNotificacionAlResidente(encomienda, usuario) {
+  // Aquí iría la lógica real de notificación (correo, push, etc.)
+  // Para testing, esta función será mockeada
+  return true;
+}
+
 // Registrar nueva encomienda
 exports.registrarEncomienda = async (req, res) => {
   try {
@@ -111,6 +118,19 @@ exports.registrarEncomienda = async (req, res) => {
     // Guardar en la base de datos
     const encomiendaGuardada = await encomienda.save();
     console.log('Encomienda guardada exitosamente:', encomiendaGuardada);
+
+    // Buscar usuario destinatario
+    const usuario = await User.findOne({ departamento });
+    if (!usuario) {
+      return res.status(404).json({ success: false, message: 'No se encontró usuario para el departamento' });
+    }
+
+    // Enviar notificación (mockeable)
+    try {
+      await exports.__testables.sendNotificacionAlResidente(encomiendaGuardada, usuario);
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Error al enviar notificación' });
+    }
 
     res.status(201).json({
       success: true,
@@ -454,4 +474,7 @@ exports.buscarPorCodigoRetiro = async (req, res) => {
     console.error('Error al buscar encomienda por código de retiro:', error);
     res.status(500).json({ message: 'Error al buscar la encomienda.' });
   }
-}; 
+};
+
+// Exportar la función para testing
+exports.__testables = { sendNotificacionAlResidente }; 

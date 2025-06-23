@@ -11,7 +11,8 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     departamento: '',
-    telefono: ''
+    telefono: '',
+    role: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -33,14 +34,18 @@ const Register = () => {
     }
 
     try {
-      const response = await api.post('/api/auth/register', {
+      // Construir el payload dinámicamente
+      const payload = {
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        departamento: formData.departamento,
         telefono: formData.telefono,
-        rol: 'residente' // Por defecto, los nuevos usuarios son residentes
-      });
+        role: formData.role
+      };
+      if (formData.role === 'residente') {
+        payload.departamento = formData.departamento;
+      }
+      const response = await api.post('/api/auth/register', payload);
 
       console.log('Respuesta del registro:', response.data); // Log para depuración
       toast.success('Registro exitoso. Por favor, inicia sesión.');
@@ -100,22 +105,25 @@ const Register = () => {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="departamento" className="block text-sm font-medium text-gray-700">
-                Departamento
-              </label>
-              <div className="mt-1">
-                <input
-                  id="departamento"
-                  name="departamento"
-                  type="text"
-                  required
-                  value={formData.departamento}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
+            {/* Departamento solo si es residente */}
+            {formData.role === 'residente' && (
+              <div>
+                <label htmlFor="departamento" className="block text-sm font-medium text-gray-700">
+                  Departamento
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="departamento"
+                    name="departamento"
+                    type="text"
+                    required={formData.role === 'residente'}
+                    value={formData.departamento}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
@@ -131,6 +139,26 @@ const Register = () => {
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Rol
+              </label>
+              <div className="mt-1">
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="">Selecciona un rol</option>
+                  <option value="residente">Residente</option>
+                  <option value="conserje">Conserje</option>
+                </select>
               </div>
             </div>
 

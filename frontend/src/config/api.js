@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://TU_BACKEND_RENDER.onrender.com'; // Reemplaza con tu URL real de backend
+const API_URL = process.env.REACT_APP_API_URL || 'https://gestion-encomiendas-backend.onrender.com';
 
 const api = axios.create({
   baseURL: API_URL,
